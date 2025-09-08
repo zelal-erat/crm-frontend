@@ -52,6 +52,10 @@ export const customerService = {
   create: (customer) => api.post('/customers', customer),
   update: (id, customer) => api.put(`/customers/${id}`, customer),
   delete: (id) => api.delete(`/customers/${id}`),
+  // Müşteri-Hizmet Analiz Endpoint'leri
+  getServiceUsage: (id) => api.get(`/customers/${id}/service-usage`),
+  getServiceAnalysis: () => api.get('/customers/service-analysis'),
+  getServiceUsageByCustomer: (params = {}) => api.get('/customers/service-usage-by-customer', { params }),
 };
 
 // Fatura servisleri
@@ -62,6 +66,15 @@ export const invoiceService = {
   // Backend: PUT /api/invoices (id gövdede)
   update: (invoice) => api.put('/invoices', invoice),
   delete: (id) => api.delete(`/invoices/${id}`),
+  markAsPaid: (id) => api.put(`/invoices/${id}/mark-paid`),
+  getUpcoming: () => api.get('/invoices/upcoming'),
+  getOverdue: () => api.get('/invoices/overdue'),
+  getServicePrice: (serviceId) => api.get(`/invoices/service-price/${serviceId}`),
+  updateOverdue: () => api.post('/invoices/update-overdue'),
+  processRenewals: () => api.post('/invoices/process-renewals'),
+  search: (customerName, pageNumber = 1, pageSize = 10) => api.get('/invoices/search', {
+    params: { customerName, pageNumber, pageSize }
+  }),
 };
 
 // Hizmet servisleri

@@ -59,11 +59,47 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Rol kontrolü fonksiyonları
+  const isAdmin = () => {
+    return user?.roles?.includes('Admin') || false;
+  };
+
+  const isStaff = () => {
+    return user?.roles?.includes('Staff') || false;
+  };
+
+  const canCreate = () => {
+    return isAdmin();
+  };
+
+  const canUpdate = () => {
+    return isAdmin();
+  };
+
+  const canDelete = () => {
+    return isAdmin();
+  };
+
+  const canManageUsers = () => {
+    return isAdmin();
+  };
+
+  const canRead = () => {
+    return isAdmin() || isStaff();
+  };
+
   const value = {
     user,
     login,
     logout,
-    loading
+    loading,
+    isAdmin,
+    isStaff,
+    canCreate,
+    canUpdate,
+    canDelete,
+    canManageUsers,
+    canRead
   };
 
   return (

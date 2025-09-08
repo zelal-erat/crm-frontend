@@ -4,13 +4,19 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar = () => {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin, canManageUsers } = useAuth();
 
   const menuItems = [
     { path: '/', label: 'Kontrol Paneli', icon: '📊' },
     { path: '/customers', label: 'Müşteriler', icon: '👥' },
     { path: '/invoices', label: 'Faturalar', icon: '📄' },
     { path: '/services', label: 'Hizmetler', icon: '🔧' },
+    { path: '/customer-analysis', label: 'Müşteri Analizi', icon: '📈' },
+  ];
+
+  // Admin için ek menü öğeleri
+  const adminMenuItems = [
+    { path: '/users', label: 'Personel Yönetimi', icon: '👤' },
   ];
 
   const handleLogout = () => {
@@ -24,6 +30,8 @@ const Sidebar = () => {
         {user && (
           <p className="text-sm text-gray-400 mt-2">
             Hoş geldin, {user.name || user.email}
+            {isAdmin() && <span className="block text-xs text-blue-400">Admin</span>}
+            {!isAdmin() && <span className="block text-xs text-green-400">Personel</span>}
           </p>
         )}
       </div>
@@ -31,6 +39,23 @@ const Sidebar = () => {
       <nav className="flex-1">
         <ul className="space-y-2">
           {menuItems.map((item) => (
+            <li key={item.path}>
+              <Link
+                to={item.path}
+                className={`flex items-center p-3 rounded-lg transition-colors ${
+                  location.pathname === item.path
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <span className="mr-3">{item.icon}</span>
+                {item.label}
+              </Link>
+            </li>
+          ))}
+          
+          {/* Admin menü öğeleri */}
+          {canManageUsers() && adminMenuItems.map((item) => (
             <li key={item.path}>
               <Link
                 to={item.path}

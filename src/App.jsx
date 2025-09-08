@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import Customers from './pages/Customers';
 import Services from './pages/Services';
 import Invoices from './pages/Invoices';
+import Users from './pages/Users';
+import CustomerAnalysis from './pages/CustomerAnalysis';
 import './App.css';
 
 function App() {
@@ -26,6 +28,8 @@ function App() {
                     <Route path="/customers" element={<Customers />} />
                     <Route path="/services" element={<Services />} />
                     <Route path="/invoices" element={<Invoices />} />
+                    <Route path="/users" element={<Users />} />
+                    <Route path="/customer-analysis" element={<CustomerAnalysis />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

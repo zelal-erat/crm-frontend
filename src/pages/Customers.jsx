@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { customerService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const { canCreate, canUpdate, canDelete } = useAuth();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    fullName: '',
     email: '',
     phone: '',
     taxOffice: '',
@@ -24,35 +27,43 @@ const Customers = () => {
   const loadCustomers = async () => {
     try {
       const response = await customerService.getAll();
-      console.log('Full response:', response);
-      console.log('response.data:', response.data);
-      console.log('response.data.data:', response.data.data);
-  
-      // Pagination içindeki items array’i
       const customersData = Array.isArray(response.data.data.items) ? response.data.data.items : [];
-      console.log('customersData:', customersData);
-  
       setCustomers(customersData);
-  
     } catch (error) {
       console.error('Müşteriler yüklenirken hata:', error);
-      setCustomers([]); 
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
   };
-  
-  
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editingCustomer) {
-        await customerService.update(editingCustomer.id, formData);
+        // PUT request için id’yi body’e ekle
+        await customerService.update(editingCustomer.id, {
+          id: editingCustomer.id,
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          taxOffice: formData.taxOffice,
+          taxNumber: formData.taxNumber,
+          address: formData.address,
+          description: formData.description
+        });
       } else {
-        await customerService.create(formData);
+        await customerService.create({
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          taxOffice: formData.taxOffice,
+          taxNumber: formData.taxNumber,
+          address: formData.address,
+          description: formData.description
+        });
       }
+  
       setShowModal(false);
       setEditingCustomer(null);
       resetForm();
@@ -61,12 +72,12 @@ const Customers = () => {
       console.error('Müşteri kaydedilirken hata:', error);
     }
   };
+  
 
   const handleEdit = (customer) => {
     setEditingCustomer(customer);
     setFormData({
-      firstName: customer.firstName,
-      lastName: customer.lastName,
+      fullName: customer.fullName,
       email: customer.email,
       phone: customer.phone,
       taxOffice: customer.taxOffice,
@@ -88,10 +99,21 @@ const Customers = () => {
     }
   };
 
+  const handleViewDetails = async (customer) => {
+    try {
+      const response = await customerService.getById(customer.id);
+      const customerData = response.data?.data || response.data;
+      setSelectedCustomer(customerData);
+      setShowDetailModal(true);
+    } catch (error) {
+      console.error('Müşteri detayları yüklenirken hata:', error);
+      alert('Müşteri detayları yüklenirken hata oluştu!');
+    }
+  };
+
   const resetForm = () => {
     setFormData({
-      firstName: '',
-      lastName: '',
+      fullName: '',
       email: '',
       phone: '',
       taxOffice: '',
@@ -109,12 +131,14 @@ const Customers = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800">Müşteriler</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-blue-600 text-black rounded-lg hover:bg-blue-700"
-        >
-          Yeni Müşteri Ekle
-        </button>
+        {canCreate() && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-4 py-2 bg-blue-600 text-black rounded-lg hover:bg-blue-700"
+          >
+            Yeni Müşteri Ekle
+          </button>
+        )}
       </div>
 
       {/* Müşteri Listesi */}
@@ -123,30 +147,23 @@ const Customers = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ad Soyad
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  E-posta
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Telefon
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vergi No
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  İşlemler
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ad Soyad</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">E-posta</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefon</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vergi No</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {customers.map((customer) => (
                 <tr key={customer.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {customer.firstName} {customer.lastName}
-                    </div>
+                    <button 
+                      onClick={() => handleViewDetails(customer)}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-900 hover:underline cursor-pointer"
+                    >
+                      {customer.fullName}
+                    </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{customer.email}</div>
@@ -158,18 +175,15 @@ const Customers = () => {
                     <div className="text-sm text-gray-900">{customer.taxNumber}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleEdit(customer)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      Düzenle
-                    </button>
-                    <button
-                      onClick={() => handleDelete(customer.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Sil
-                    </button>
+                    {canUpdate() && (
+                      <button onClick={() => handleEdit(customer)} className="text-blue-600 hover:text-blue-900 mr-3">Düzenle</button>
+                    )}
+                    {canDelete() && (
+                      <button onClick={() => handleDelete(customer.id)} className="text-red-600 hover:text-red-900">Sil</button>
+                    )}
+                    {!canUpdate() && !canDelete() && (
+                      <span className="text-gray-400 text-sm">Sadece görüntüleme</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -183,33 +197,22 @@ const Customers = () => {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{editingCustomer ? 'Müşteri Düzenle' : 'Yeni Müşteri Ekle'}</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Ad</label>
-                    <input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Soyad</label>
-                    <input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                      required
-                    />
-                  </div>
-                </div>
                 
+                {/* Full Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Ad Soyad</label>
+                  <input
+                    type="text"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+
+                {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">E-posta</label>
                   <input
@@ -221,6 +224,7 @@ const Customers = () => {
                   />
                 </div>
 
+                {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Telefon</label>
                   <input
@@ -232,6 +236,7 @@ const Customers = () => {
                   />
                 </div>
 
+                {/* Tax Office & Tax Number */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Vergi Dairesi</label>
@@ -253,6 +258,7 @@ const Customers = () => {
                   </div>
                 </div>
 
+                {/* Address */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Adres</label>
                   <textarea
@@ -263,6 +269,7 @@ const Customers = () => {
                   />
                 </div>
 
+                {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Açıklama</label>
                   <textarea
@@ -273,14 +280,11 @@ const Customers = () => {
                   />
                 </div>
 
+                {/* Buttons */}
                 <div className="flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowModal(false);
-                      setEditingCustomer(null);
-                      resetForm();
-                    }}
+                    onClick={() => { setShowModal(false); setEditingCustomer(null); resetForm(); }}
                     className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
                   >
                     İptal
@@ -292,11 +296,94 @@ const Customers = () => {
                     {editingCustomer ? 'Güncelle' : 'Kaydet'}
                   </button>
                 </div>
+
               </form>
             </div>
           </div>
         </div>
       )}
+
+      {/* Müşteri Detay Modal */}
+      {showDetailModal && selectedCustomer && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-5 md:top-10 mx-auto p-4 md:p-5 border w-11/12 md:w-2/3 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Müşteri Detayları</h3>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <span className="sr-only">Kapat</span>
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-3">Kişisel Bilgiler</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Müşteri ID:</span>
+                    <span className="text-gray-900">#{selectedCustomer.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ad Soyad:</span>
+                    <span className="font-medium text-gray-900">{selectedCustomer.fullName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">E-posta:</span>
+                    <span className="text-gray-900">{selectedCustomer.email}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Telefon:</span>
+                    <span className="text-gray-900">{selectedCustomer.phone || '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-3">Vergi Bilgileri</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Vergi Dairesi:</span>
+                    <span className="text-gray-900">{selectedCustomer.taxOffice || '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Vergi Numarası:</span>
+                    <span className="text-gray-900">{selectedCustomer.taxNumber || '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg md:col-span-2">
+                <h4 className="font-semibold text-gray-900 mb-3">Adres Bilgileri</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Adres:</span>
+                    <span className="text-gray-900">{selectedCustomer.address || '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Açıklama:</span>
+                    <span className="text-gray-900">{selectedCustomer.description || '-'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="px-4 py-2 bg-gray-600 text-black rounded-md hover:bg-gray-700"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

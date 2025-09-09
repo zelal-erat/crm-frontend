@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { serviceService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'react-toastify';
 
 const Services = () => {
   const [services, setServices] = useState([]);
@@ -40,40 +39,8 @@ const Services = () => {
     try {
       if (editingService) {
         await serviceService.update({ id: editingService.id, ...formData });
-        toast.success(
-          <div>
-            <div className="font-semibold">✅ Başarılı!</div>
-            <div className="text-sm">Hizmet başarıyla güncellendi.</div>
-          </div>,
-          {
-            position: "top-right",
-            autoClose: 3000,
-            style: {
-              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-              color: '#065f46',
-              border: '1px solid #10b981',
-              borderRadius: '12px'
-            }
-          }
-        );
       } else {
         await serviceService.create(formData);
-        toast.success(
-          <div>
-            <div className="font-semibold">✅ Başarılı!</div>
-            <div className="text-sm">Yeni hizmet başarıyla eklendi.</div>
-          </div>,
-          {
-            position: "top-right",
-            autoClose: 3000,
-            style: {
-              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-              color: '#065f46',
-              border: '1px solid #10b981',
-              borderRadius: '12px'
-            }
-          }
-        );
       }
       setShowModal(false);
       setEditingService(null);
@@ -81,39 +48,6 @@ const Services = () => {
       loadServices();
     } catch (error) {
       console.error('Hizmet kaydedilirken hata:', error);
-      if (error.response?.data?.message?.includes('benzersiz') || error.response?.data?.message?.includes('unique')) {
-        toast.error(
-          <div>
-            <div className="font-semibold">❌ Hizmet Kaydetme Hatası!</div>
-            <div className="text-sm">
-              <p className="mb-1">Kural 10: Bu hizmet adı zaten kullanılıyor.</p>
-              <p className="text-xs">Hizmet adı benzersiz olmalıdır.</p>
-            </div>
-          </div>,
-          {
-            position: "top-center",
-            autoClose: 6000,
-            style: {
-              background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
-              color: '#991b1b',
-              border: '1px solid #ef4444',
-              borderRadius: '12px',
-              maxWidth: '400px'
-            }
-          }
-        );
-      } else {
-        toast.error(
-          <div>
-            <div className="font-semibold">❌ Hata!</div>
-            <div className="text-sm">Hizmet kaydedilirken hata oluştu!</div>
-          </div>,
-          {
-            position: "top-right",
-            autoClose: 4000
-          }
-        );
-      }
     }
   };
 

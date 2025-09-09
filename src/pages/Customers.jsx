@@ -40,7 +40,7 @@ const Customers = () => {
     e.preventDefault();
     try {
       if (editingCustomer) {
-        // PUT request için id’yi body’e ekle
+        // PUT request için id'yi body'e ekle
         await customerService.update(editingCustomer.id, {
           id: editingCustomer.id,
           fullName: formData.fullName,
@@ -51,6 +51,7 @@ const Customers = () => {
           address: formData.address,
           description: formData.description
         });
+        alert('Müşteri başarıyla güncellendi!');
       } else {
         await customerService.create({
           fullName: formData.fullName,
@@ -61,6 +62,7 @@ const Customers = () => {
           address: formData.address,
           description: formData.description
         });
+        alert('Müşteri başarıyla eklendi!');
       }
   
       setShowModal(false);
@@ -69,6 +71,13 @@ const Customers = () => {
       loadCustomers();
     } catch (error) {
       console.error('Müşteri kaydedilirken hata:', error);
+      if (error.response?.data?.message?.includes('vergi numarası') || error.response?.data?.message?.includes('tax number') || error.response?.data?.message?.includes('benzersiz')) {
+        alert('❌ Hata!\n\nAynı vergi numarasıyla iki müşteri kaydedilemez!\nVergi numarası benzersiz olmalıdır.');
+      } else if (error.response?.data?.message?.includes('e-posta') || error.response?.data?.message?.includes('email') || error.response?.data?.message?.includes('unique')) {
+        alert('❌ Hata!\n\nAynı e-posta adresiyle iki müşteri kaydedilemez!\nE-posta adresi benzersiz olmalıdır.');
+      } else {
+        alert('Müşteri kaydedilirken hata oluştu!');
+      }
     }
   };
   

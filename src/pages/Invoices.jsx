@@ -220,7 +220,11 @@ const Invoices = () => {
         alert('Fatura başarıyla silindi!');
       } catch (error) {
         console.error('Fatura silinirken hata:', error);
-        alert('Fatura silinirken hata oluştu!');
+        if (error.response?.data?.message?.includes('ödenmiş') || error.response?.data?.message?.includes('paid')) {
+          alert('❌ Silme İşlemi Başarısız!\n\nÖdenmiş faturalar silinemez!\nSadece bekleyen, gecikmiş veya iptal edilmiş faturalar silinebilir.');
+        } else {
+          alert('Fatura silinirken hata oluştu!');
+        }
       }
     }
   };

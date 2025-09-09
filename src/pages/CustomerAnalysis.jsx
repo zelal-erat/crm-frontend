@@ -206,7 +206,7 @@ Müşteri Listesi
                 <p className="text-2xl font-semibold text-gray-900">
                   {analysisData?.customerUsages?.filter(c => c.totalSpent > 0).length || 0}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">En az bir ödenmiş faturası olan müşteriler</p>
+                <p className="text-xs text-gray-500 mt-1">Kural 28: En az bir ödenmiş faturası olan müşteriler</p>
               </div>
             </div>
           </div>

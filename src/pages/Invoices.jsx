@@ -210,36 +210,48 @@ const Invoices = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bu faturayı silmek istediğinizden emin misiniz?')) {
+    if (window.confirm('Bu faturayı silmek istediğinizden emin misiniz?\n\n⚠️ Kural 15: Ödenmiş faturalar silinemez!\nSadece bekleyen, gecikmiş veya iptal edilmiş faturalar silinebilir.')) {
       try {
         await invoiceService.delete(id);
         loadData();
+        alert('Fatura başarıyla silindi!');
       } catch (error) {
         console.error('Fatura silinirken hata:', error);
+        if (error.response?.data?.message?.includes('ödenmiş') || error.response?.data?.message?.includes('paid')) {
+          alert('❌ Silme İşlemi Başarısız!\n\nKural 15: Ödenmiş faturalar silinemez. Sadece bekleyen, gecikmiş veya iptal edilmiş faturalar silinebilir.');
+        } else {
+          alert('Fatura silinirken hata oluştu!');
+        }
       }
     }
   };
 
   const handleMarkAsPaid = async (id) => {
-    if (window.confirm('Bu faturayı ödenmiş olarak işaretlemek istediğinizden emin misiniz?')) {
+    if (window.confirm('Bu faturayı ödenmiş olarak işaretlemek istediğinizden emin misiniz?\n\n⚠️ Kural 14: Sadece bekleyen durumundaki faturalar ödenmiş olarak işaretlenebilir!')) {
       try {
         await invoiceService.markAsPaid(id);
         loadData();
+        alert('Fatura ödenmiş olarak işaretlendi!');
       } catch (error) {
         console.error('Fatura ödeme işaretlenirken hata:', error);
+        if (error.response?.data?.message?.includes('bekleyen') || error.response?.data?.message?.includes('pending')) {
+          alert('❌ Ödeme İşlemi Başarısız!\n\nKural 14: Sadece bekleyen durumundaki faturalar ödenmiş olarak işaretlenebilir. Ödenmiş, gecikmiş veya iptal edilmiş faturalar tekrar ödenemez.');
+        } else {
+          alert('Fatura ödeme işaretlenirken hata oluştu!');
+        }
       }
     }
   };
 
 
   const handleProcessRenewals = async () => {
-    if (window.confirm('Yenileme işlemlerini başlatmak istediğinizden emin misiniz? Bu işlem Admin yetkisi gerektirir.')) {
+    if (window.confirm('Yenileme işlemlerini başlatmak istediğinizden emin misiniz?\n\n⚠️ Yenileme Kuralları:\n• Kural 21: Vade tarihi geçmiş olmalı\n• Kural 21: Orijinal fatura ödenmiş olmalı\n• Kural 21: Hizmet tek seferlik olmamalı\n• Kural 22: Vade tarihi otomatik hesaplanır\n\nBu işlem Admin yetkisi gerektirir.')) {
       try {
         setProcessingRenewals(true);
         const response = await invoiceService.processRenewals();
         
         if (response.data?.success || response.data?.isSuccess) {
-          alert('Yenileme işlemleri başarıyla tamamlandı!');
+          alert('✅ Yenileme işlemleri başarıyla tamamlandı!\n\nKural 22: Vade tarihleri yenileme döngüsüne göre otomatik hesaplandı.');
         } else {
           alert('Yenileme işlemleri tamamlandı.');
         }
@@ -701,7 +713,7 @@ const Invoices = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Müşteri</label>
+                  <label className="block text-sm font-medium text-gray-700">Müşteri <span className="text-red-500">*</span></label>
                   <select
                     value={formData.customerId}
                     onChange={(e) => setFormData({...formData, customerId: e.target.value})}
@@ -711,6 +723,7 @@ const Invoices = () => {
                     <option value="">Müşteri Seçin</option>
                     {customers.map(c => <option key={c.id} value={c.id}>{c.fullName}</option>)}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">Kural 16: Müşteri mevcut ve aktif olmalıdır</p>
                 </div>
               </div>
 
@@ -761,9 +774,10 @@ const Invoices = () => {
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-700">Fatura Kalemleri</label>
+                  <label className="block text-sm font-medium text-gray-700">Fatura Kalemleri <span className="text-red-500">*</span></label>
                   <button type="button" onClick={addItem} className="px-3 py-1 bg-green-600 text-black rounded text-sm hover:bg-green-700">Kalem Ekle</button>
                 </div>
+                <p className="text-xs text-gray-500 mb-2">Kural 11: Her fatura en az bir kalem içermelidir</p>
 
                 {formData.items.map((item, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
@@ -796,12 +810,31 @@ const Invoices = () => {
 
                     <div className="grid grid-cols-3 gap-4 mt-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Fiyat</label>
-                        <input type="number" step="0.01" value={item.price} onChange={(e) => updateItem(index, 'price', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900" required />
+                        <label className="block text-sm font-medium text-gray-700">Fiyat <span className="text-red-500">*</span></label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          min="0.01"
+                          value={item.price} 
+                          onChange={(e) => updateItem(index, 'price', e.target.value)} 
+                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900" 
+                          required 
+                          placeholder="0.00"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Kural 12: Fiyat sıfırdan büyük olmalıdır</p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Adet</label>
-                        <input type="number" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900" required />
+                        <label className="block text-sm font-medium text-gray-700">Adet <span className="text-red-500">*</span></label>
+                        <input 
+                          type="number" 
+                          min="1"
+                          value={item.quantity} 
+                          onChange={(e) => updateItem(index, 'quantity', e.target.value)} 
+                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900" 
+                          required 
+                          placeholder="1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Kural 13: Miktar sıfırdan büyük olmalıdır</p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">KDV (%)</label>

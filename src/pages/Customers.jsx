@@ -89,12 +89,18 @@ const Customers = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bu müşteriyi silmek istediğinizden emin misiniz?')) {
+    if (window.confirm('Bu müşteriyi silmek istediğinizden emin misiniz?\n\n⚠️ Kural 4: Aktif faturası olan müşteriler silinemez!\nSistemde bekleyen durumda faturası bulunan müşterilerin silinmesi engellenir.')) {
       try {
         await customerService.delete(id);
         loadCustomers();
+        alert('Müşteri başarıyla silindi!');
       } catch (error) {
         console.error('Müşteri silinirken hata:', error);
+        if (error.response?.data?.message?.includes('aktif fatura') || error.response?.data?.message?.includes('bekleyen fatura')) {
+          alert('❌ Silme İşlemi Başarısız!\n\nKural 4: Bu müşterinin aktif/bekleyen faturası bulunmaktadır. Önce faturaları iptal edin veya ödenmiş olarak işaretleyin.');
+        } else {
+          alert('Müşteri silinirken hata oluştu!');
+        }
       }
     }
   };
@@ -202,26 +208,30 @@ const Customers = () => {
                 
                 {/* Full Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Ad Soyad</label>
+                  <label className="block text-sm font-medium text-gray-700">Ad Soyad <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={formData.fullName}
                     onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                     required
+                    placeholder="Ad Soyad zorunludur"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Kural 5: Ad soyad alanı boş bırakılamaz</p>
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">E-posta</label>
+                  <label className="block text-sm font-medium text-gray-700">E-posta <span className="text-red-500">*</span></label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                     required
+                    placeholder="ornek@email.com"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Kural 1: E-posta benzersiz olmalıdır | Kural 6: Geçerli format kontrolü</p>
                 </div>
 
                 {/* Phone */}
@@ -254,7 +264,9 @@ const Customers = () => {
                       value={formData.taxNumber}
                       onChange={(e) => setFormData({...formData, taxNumber: e.target.value})}
                       className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                      placeholder="Opsiyonel - benzersiz olmalıdır"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Kural 2: Vergi numarası benzersiz olmalıdır (opsiyonel)</p>
                   </div>
                 </div>
 

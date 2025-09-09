@@ -179,26 +179,31 @@ const Services = () => {
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Hizmet Adı</label>
+                  <label className="block text-sm font-medium text-gray-700">Hizmet Adı <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
                     required
+                    placeholder="Hizmet adı zorunludur"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Kural 8: Hizmet adı zorunludur | Kural 10: Hizmet adı benzersiz olmalıdır</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Fiyat (₺)</label>
+                  <label className="block text-sm font-medium text-gray-700">Fiyat (₺) <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     value={formData.price}
                     onChange={(e) => setFormData({...formData, price: e.target.value})}
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
                     required
+                    placeholder="0.00"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Kural 9: Hizmet fiyatı negatif olamaz (sıfır veya pozitif)</p>
                 </div>
 
                 <div className="flex justify-end space-x-3">

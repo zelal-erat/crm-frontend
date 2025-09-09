@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { customerService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-toastify';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -89,18 +90,97 @@ const Customers = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bu müşteriyi silmek istediğinizden emin misiniz?\n\n⚠️ Kural 4: Aktif faturası olan müşteriler silinemez!\nSistemde bekleyen durumda faturası bulunan müşterilerin silinmesi engellenir.')) {
-      try {
-        await customerService.delete(id);
-        loadCustomers();
-        alert('Müşteri başarıyla silindi!');
-      } catch (error) {
-        console.error('Müşteri silinirken hata:', error);
-        if (error.response?.data?.message?.includes('aktif fatura') || error.response?.data?.message?.includes('bekleyen fatura')) {
-          alert('❌ Silme İşlemi Başarısız!\n\nKural 4: Bu müşterinin aktif/bekleyen faturası bulunmaktadır. Önce faturaları iptal edin veya ödenmiş olarak işaretleyin.');
-        } else {
-          alert('Müşteri silinirken hata oluştu!');
+    const customer = customers.find(c => c.id === id);
+    const customerName = customer ? customer.fullName : 'Bu müşteri';
+    
+    toast.warning(
+      <div>
+        <div className="font-semibold mb-2">⚠️ Müşteri Silme Uyarısı</div>
+        <div className="text-sm">
+          <p className="mb-1"><strong>{customerName}</strong> müşterisini silmek istediğinizden emin misiniz?</p>
+          <p className="text-red-600 font-medium">Kural 4: Aktif faturası olan müşteriler silinemez!</p>
+          <p className="text-gray-600 text-xs mt-1">Sistemde bekleyen durumda faturası bulunan müşterilerin silinmesi engellenir.</p>
+        </div>
+      </div>,
+      {
+        position: "top-center",
+        autoClose: 8000,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        style: {
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          color: '#92400e',
+          border: '1px solid #f59e0b',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          maxWidth: '400px'
         }
+      }
+    );
+
+    // Kullanıcıya onay seçenekleri sun
+    setTimeout(() => {
+      if (window.confirm(`${customerName} müşterisini silmek istediğinizden emin misiniz?\n\n⚠️ Kural 4: Aktif faturası olan müşteriler silinemez!`)) {
+        performDelete(id);
+      }
+    }, 1000);
+  };
+
+  const performDelete = async (id) => {
+    try {
+      await customerService.delete(id);
+      loadCustomers();
+      toast.success(
+        <div>
+          <div className="font-semibold">✅ Başarılı!</div>
+          <div className="text-sm">Müşteri başarıyla silindi.</div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          style: {
+            background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+            color: '#065f46',
+            border: '1px solid #10b981',
+            borderRadius: '12px'
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Müşteri silinirken hata:', error);
+      if (error.response?.data?.message?.includes('aktif fatura') || error.response?.data?.message?.includes('bekleyen fatura')) {
+        toast.error(
+          <div>
+            <div className="font-semibold">❌ Silme İşlemi Başarısız!</div>
+            <div className="text-sm">
+              <p className="mb-1">Kural 4: Bu müşterinin aktif/bekleyen faturası bulunmaktadır.</p>
+              <p className="text-xs">Önce faturaları iptal edin veya ödenmiş olarak işaretleyin.</p>
+            </div>
+          </div>,
+          {
+            position: "top-center",
+            autoClose: 6000,
+            style: {
+              background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+              color: '#991b1b',
+              border: '1px solid #ef4444',
+              borderRadius: '12px',
+              maxWidth: '400px'
+            }
+          }
+        );
+      } else {
+        toast.error(
+          <div>
+            <div className="font-semibold">❌ Hata!</div>
+            <div className="text-sm">Müşteri silinirken hata oluştu!</div>
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 4000
+          }
+        );
       }
     }
   };

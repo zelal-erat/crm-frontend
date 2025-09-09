@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { invoiceService, customerService, serviceService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-toastify';
 
 const Invoices = () => {
   const [invoices, setInvoices] = useState([]);
@@ -210,58 +211,293 @@ const Invoices = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bu faturayı silmek istediğinizden emin misiniz?\n\n⚠️ Kural 15: Ödenmiş faturalar silinemez!\nSadece bekleyen, gecikmiş veya iptal edilmiş faturalar silinebilir.')) {
-      try {
-        await invoiceService.delete(id);
-        loadData();
-        alert('Fatura başarıyla silindi!');
-      } catch (error) {
-        console.error('Fatura silinirken hata:', error);
-        if (error.response?.data?.message?.includes('ödenmiş') || error.response?.data?.message?.includes('paid')) {
-          alert('❌ Silme İşlemi Başarısız!\n\nKural 15: Ödenmiş faturalar silinemez. Sadece bekleyen, gecikmiş veya iptal edilmiş faturalar silinebilir.');
-        } else {
-          alert('Fatura silinirken hata oluştu!');
+    const invoice = invoices.find(inv => inv.id === id);
+    const invoiceInfo = invoice ? `${invoice.customerName} - ₺${invoice.totalAmount}` : 'Bu fatura';
+    
+    toast.warning(
+      <div>
+        <div className="font-semibold mb-2">⚠️ Fatura Silme Uyarısı</div>
+        <div className="text-sm">
+          <p className="mb-1"><strong>{invoiceInfo}</strong> faturasını silmek istediğinizden emin misiniz?</p>
+          <p className="text-red-600 font-medium">Kural 15: Ödenmiş faturalar silinemez!</p>
+          <p className="text-gray-600 text-xs mt-1">Sadece bekleyen, gecikmiş veya iptal edilmiş faturalar silinebilir.</p>
+        </div>
+      </div>,
+      {
+        position: "top-center",
+        autoClose: 8000,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        style: {
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+          color: '#92400e',
+          border: '1px solid #f59e0b',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          maxWidth: '400px'
         }
+      }
+    );
+
+    // Kullanıcıya onay seçenekleri sun
+    setTimeout(() => {
+      if (window.confirm(`${invoiceInfo} faturasını silmek istediğinizden emin misiniz?\n\n⚠️ Kural 15: Ödenmiş faturalar silinemez!`)) {
+        performDelete(id);
+      }
+    }, 1000);
+  };
+
+  const performDelete = async (id) => {
+    try {
+      await invoiceService.delete(id);
+      loadData();
+      toast.success(
+        <div>
+          <div className="font-semibold">✅ Başarılı!</div>
+          <div className="text-sm">Fatura başarıyla silindi.</div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          style: {
+            background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+            color: '#065f46',
+            border: '1px solid #10b981',
+            borderRadius: '12px'
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Fatura silinirken hata:', error);
+      if (error.response?.data?.message?.includes('ödenmiş') || error.response?.data?.message?.includes('paid')) {
+        toast.error(
+          <div>
+            <div className="font-semibold">❌ Silme İşlemi Başarısız!</div>
+            <div className="text-sm">
+              <p className="mb-1">Kural 15: Ödenmiş faturalar silinemez.</p>
+              <p className="text-xs">Sadece bekleyen, gecikmiş veya iptal edilmiş faturalar silinebilir.</p>
+            </div>
+          </div>,
+          {
+            position: "top-center",
+            autoClose: 6000,
+            style: {
+              background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+              color: '#991b1b',
+              border: '1px solid #ef4444',
+              borderRadius: '12px',
+              maxWidth: '400px'
+            }
+          }
+        );
+      } else {
+        toast.error(
+          <div>
+            <div className="font-semibold">❌ Hata!</div>
+            <div className="text-sm">Fatura silinirken hata oluştu!</div>
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 4000
+          }
+        );
       }
     }
   };
 
   const handleMarkAsPaid = async (id) => {
-    if (window.confirm('Bu faturayı ödenmiş olarak işaretlemek istediğinizden emin misiniz?\n\n⚠️ Kural 14: Sadece bekleyen durumundaki faturalar ödenmiş olarak işaretlenebilir!')) {
-      try {
-        await invoiceService.markAsPaid(id);
-        loadData();
-        alert('Fatura ödenmiş olarak işaretlendi!');
-      } catch (error) {
-        console.error('Fatura ödeme işaretlenirken hata:', error);
-        if (error.response?.data?.message?.includes('bekleyen') || error.response?.data?.message?.includes('pending')) {
-          alert('❌ Ödeme İşlemi Başarısız!\n\nKural 14: Sadece bekleyen durumundaki faturalar ödenmiş olarak işaretlenebilir. Ödenmiş, gecikmiş veya iptal edilmiş faturalar tekrar ödenemez.');
-        } else {
-          alert('Fatura ödeme işaretlenirken hata oluştu!');
+    const invoice = invoices.find(inv => inv.id === id);
+    const invoiceInfo = invoice ? `${invoice.customerName} - ₺${invoice.totalAmount}` : 'Bu fatura';
+    
+    toast.info(
+      <div>
+        <div className="font-semibold mb-2">💰 Fatura Ödeme İşlemi</div>
+        <div className="text-sm">
+          <p className="mb-1"><strong>{invoiceInfo}</strong> faturasını ödenmiş olarak işaretlemek istediğinizden emin misiniz?</p>
+          <p className="text-blue-600 font-medium">Kural 14: Sadece bekleyen durumundaki faturalar ödenmiş olarak işaretlenebilir!</p>
+          <p className="text-gray-600 text-xs mt-1">Ödenmiş, gecikmiş veya iptal edilmiş faturalar tekrar ödenemez.</p>
+        </div>
+      </div>,
+      {
+        position: "top-center",
+        autoClose: 8000,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        style: {
+          background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+          color: '#1e40af',
+          border: '1px solid #3b82f6',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          maxWidth: '400px'
         }
+      }
+    );
+
+    // Kullanıcıya onay seçenekleri sun
+    setTimeout(() => {
+      if (window.confirm(`${invoiceInfo} faturasını ödenmiş olarak işaretlemek istediğinizden emin misiniz?\n\n⚠️ Kural 14: Sadece bekleyen durumundaki faturalar ödenmiş olarak işaretlenebilir!`)) {
+        performMarkAsPaid(id);
+      }
+    }, 1000);
+  };
+
+  const performMarkAsPaid = async (id) => {
+    try {
+      await invoiceService.markAsPaid(id);
+      loadData();
+      toast.success(
+        <div>
+          <div className="font-semibold">✅ Başarılı!</div>
+          <div className="text-sm">Fatura ödenmiş olarak işaretlendi.</div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          style: {
+            background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+            color: '#065f46',
+            border: '1px solid #10b981',
+            borderRadius: '12px'
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Fatura ödeme işaretlenirken hata:', error);
+      if (error.response?.data?.message?.includes('bekleyen') || error.response?.data?.message?.includes('pending')) {
+        toast.error(
+          <div>
+            <div className="font-semibold">❌ Ödeme İşlemi Başarısız!</div>
+            <div className="text-sm">
+              <p className="mb-1">Kural 14: Sadece bekleyen durumundaki faturalar ödenmiş olarak işaretlenebilir.</p>
+              <p className="text-xs">Ödenmiş, gecikmiş veya iptal edilmiş faturalar tekrar ödenemez.</p>
+            </div>
+          </div>,
+          {
+            position: "top-center",
+            autoClose: 6000,
+            style: {
+              background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+              color: '#991b1b',
+              border: '1px solid #ef4444',
+              borderRadius: '12px',
+              maxWidth: '400px'
+            }
+          }
+        );
+      } else {
+        toast.error(
+          <div>
+            <div className="font-semibold">❌ Hata!</div>
+            <div className="text-sm">Fatura ödeme işaretlenirken hata oluştu!</div>
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 4000
+          }
+        );
       }
     }
   };
 
 
   const handleProcessRenewals = async () => {
-    if (window.confirm('Yenileme işlemlerini başlatmak istediğinizden emin misiniz?\n\n⚠️ Yenileme Kuralları:\n• Kural 21: Vade tarihi geçmiş olmalı\n• Kural 21: Orijinal fatura ödenmiş olmalı\n• Kural 21: Hizmet tek seferlik olmamalı\n• Kural 22: Vade tarihi otomatik hesaplanır\n\nBu işlem Admin yetkisi gerektirir.')) {
-      try {
-        setProcessingRenewals(true);
-        const response = await invoiceService.processRenewals();
-        
-        if (response.data?.success || response.data?.isSuccess) {
-          alert('✅ Yenileme işlemleri başarıyla tamamlandı!\n\nKural 22: Vade tarihleri yenileme döngüsüne göre otomatik hesaplandı.');
-        } else {
-          alert('Yenileme işlemleri tamamlandı.');
+    toast.info(
+      <div>
+        <div className="font-semibold mb-2">🔄 Yenileme İşlemleri</div>
+        <div className="text-sm">
+          <p className="mb-2">Yenileme işlemlerini başlatmak istediğinizden emin misiniz?</p>
+          <div className="bg-blue-50 p-2 rounded text-xs">
+            <p className="font-medium text-blue-800 mb-1">⚠️ Yenileme Kuralları:</p>
+            <ul className="list-disc list-inside text-blue-700 space-y-1">
+              <li>Kural 21: Vade tarihi geçmiş olmalı</li>
+              <li>Kural 21: Orijinal fatura ödenmiş olmalı</li>
+              <li>Kural 21: Hizmet tek seferlik olmamalı</li>
+              <li>Kural 22: Vade tarihi otomatik hesaplanır</li>
+            </ul>
+          </div>
+          <p className="text-orange-600 font-medium mt-2">Bu işlem Admin yetkisi gerektirir.</p>
+        </div>
+      </div>,
+      {
+        position: "top-center",
+        autoClose: 10000,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        style: {
+          background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+          color: '#0c4a6e',
+          border: '1px solid #0284c7',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          maxWidth: '450px'
         }
-        loadData();
-      } catch (error) {
-        console.error('Yenileme işlemleri sırasında hata:', error);
-        alert('Yenileme işlemleri sırasında hata oluştu!');
-      } finally {
-        setProcessingRenewals(false);
       }
+    );
+
+    // Kullanıcıya onay seçenekleri sun
+    setTimeout(() => {
+      if (window.confirm('Yenileme işlemlerini başlatmak istediğinizden emin misiniz?\n\n⚠️ Yenileme Kuralları:\n• Kural 21: Vade tarihi geçmiş olmalı\n• Kural 21: Orijinal fatura ödenmiş olmalı\n• Kural 21: Hizmet tek seferlik olmamalı\n• Kural 22: Vade tarihi otomatik hesaplanır\n\nBu işlem Admin yetkisi gerektirir.')) {
+        performRenewals();
+      }
+    }, 1000);
+  };
+
+  const performRenewals = async () => {
+    try {
+      setProcessingRenewals(true);
+      const response = await invoiceService.processRenewals();
+      
+      if (response.data?.success || response.data?.isSuccess) {
+        toast.success(
+          <div>
+            <div className="font-semibold">✅ Yenileme İşlemleri Tamamlandı!</div>
+            <div className="text-sm">
+              <p className="mb-1">Yenileme işlemleri başarıyla tamamlandı.</p>
+              <p className="text-green-600 font-medium">Kural 22: Vade tarihleri yenileme döngüsüne göre otomatik hesaplandı.</p>
+            </div>
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 5000,
+            style: {
+              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+              color: '#065f46',
+              border: '1px solid #10b981',
+              borderRadius: '12px'
+            }
+          }
+        );
+      } else {
+        toast.info(
+          <div>
+            <div className="font-semibold">ℹ️ Yenileme İşlemleri</div>
+            <div className="text-sm">Yenileme işlemleri tamamlandı.</div>
+          </div>,
+          {
+            position: "top-right",
+            autoClose: 3000
+          }
+        );
+      }
+      loadData();
+    } catch (error) {
+      console.error('Yenileme işlemleri sırasında hata:', error);
+      toast.error(
+        <div>
+          <div className="font-semibold">❌ Hata!</div>
+          <div className="text-sm">Yenileme işlemleri sırasında hata oluştu!</div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 4000
+        }
+      );
+    } finally {
+      setProcessingRenewals(false);
     }
   };
 

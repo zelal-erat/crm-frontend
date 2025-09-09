@@ -296,11 +296,11 @@ const Invoices = () => {
     if (field === 'renewalCycle') {
       const currentPrice = parseFloat(newItems[index].price) || 0;
       if (value === 'Yearly' && currentPrice > 0) {
-        // Yıllık için 12 ay fiyatı
+        // Yıllık için 12 ay fiyatı (aylık fiyatı 12 ile çarp)
         newItems[index].price = (currentPrice * 12).toString();
       } else if (value === 'Monthly' && currentPrice > 0) {
-        // Aylık için orijinal fiyat (12'ye böl)
-        newItems[index].price = (currentPrice / 12).toString();
+        // Aylık için fiyatı olduğu gibi bırak (zaten aylık fiyat)
+        newItems[index].price = currentPrice.toString();
       }
     }
     
@@ -374,6 +374,24 @@ const Invoices = () => {
           >
             {processingRenewals ? 'İşleniyor...' : 'Yenileme İşlemleri'}
           </button>
+        </div>
+      </div>
+
+      {/* Yenileme Sistemi Bilgisi */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-blue-800">Yenileme Sistemi</h3>
+            <div className="mt-2 text-sm text-blue-700">
+              <p>Vade tarihi geçmiş ödenmiş faturalar yenilenebilir ve yenilenmiş fatura olarak geçer.</p>
+              <p className="mt-1">Yenileme işlemi için "Yenileme İşlemleri" butonunu kullanın.</p>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -29,11 +29,16 @@ const CustomerAnalysis = () => {
   const loadAnalysisData = async () => {
     try {
       setLoading(true);
-      const response = await customerService.getServiceAnalysis();
+      console.log('Analiz verileri yükleniyor...');
+      // Backend: IncludeInactiveCustomers = true (tüm müşterileri dahil et)
+      const response = await customerService.getServiceAnalysis(true);
+      console.log('Analiz response:', response);
       const data = response.data?.data || response.data;
+      console.log('Analiz data:', data);
       setAnalysisData(data);
     } catch (error) {
       console.error('Analiz verileri yüklenirken hata:', error);
+      console.error('Error details:', error.response?.data);
       alert('Analiz verileri yüklenirken hata oluştu!');
     } finally {
       setLoading(false);
@@ -48,11 +53,14 @@ const CustomerAnalysis = () => {
     }
     
     try {
+      console.log('Müşteri kullanım verileri yükleniyor, ID:', customerId);
       const response = await customerService.getServiceUsage(customerId);
+      console.log('Müşteri usage response:', response);
       setCustomerUsageData(response.data?.data || response.data);
       setSelectedCustomer(customerId);
     } catch (error) {
       console.error('Müşteri kullanım verileri yüklenirken hata:', error);
+      console.error('Error details:', error.response?.data);
       alert('Müşteri kullanım verileri yüklenirken hata oluştu!');
     }
   };
@@ -61,12 +69,16 @@ const CustomerAnalysis = () => {
     try {
       const params = {};
       if (filterParams.serviceId) params.serviceId = filterParams.serviceId;
-      if (filterParams.customerSegment) params.customerSegment = filterParams.customerSegment;
+      // Backend: GetServiceUsageByCustomerQuery sadece ServiceId parametresi kullanıyor
+      // customerSegment parametresi backend'de desteklenmiyor
       
+      console.log('Filtrelenmiş veriler yükleniyor, params:', params);
       const response = await customerService.getServiceUsageByCustomer(params);
+      console.log('Filtrelenmiş response:', response);
       setFilteredData(response.data?.data || response.data);
     } catch (error) {
       console.error('Filtrelenmiş veriler yüklenirken hata:', error);
+      console.error('Error details:', error.response?.data);
       alert('Filtrelenmiş veriler yüklenirken hata oluştu!');
     }
   };
@@ -159,7 +171,7 @@ Müşteri Listesi
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Toplam Müşteri</p>
-                <p className="text-2xl font-semibold text-gray-900">{analysisData.summary?.totalCustomers || 0}</p>
+                <p className="text-2xl font-semibold text-gray-900">{analysisData?.summary?.totalCustomers || 0}</p>
               </div>
             </div>
           </div>
@@ -175,7 +187,7 @@ Müşteri Listesi
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Toplam Gelir</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {formatCurrency(analysisData.summary?.totalRevenue || 0)}
+                  {formatCurrency(analysisData?.summary?.totalRevenue || 0)}
                 </p>
               </div>
             </div>
@@ -192,8 +204,9 @@ Müşteri Listesi
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Aktif Müşteri</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {analysisData.customerUsages?.filter(c => c.totalSpent > 0).length || 0}
+                  {analysisData?.customerUsages?.filter(c => c.totalSpent > 0).length || 0}
                 </p>
+                <p className="text-xs text-gray-500 mt-1">En az bir ödenmiş faturası olan müşteriler</p>
               </div>
             </div>
           </div>
@@ -209,7 +222,7 @@ Müşteri Listesi
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Ortalama Değer</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {formatCurrency(analysisData.summary?.averageSpendingPerCustomer || 0)}
+                  {formatCurrency(analysisData?.summary?.averageSpendingPerCustomer || 0)}
                 </p>
               </div>
             </div>
@@ -223,7 +236,10 @@ Müşteri Listesi
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900">Müşteri Listesi</h3>
             <p className="text-sm text-gray-500 mt-1">
-              Toplam {analysisData.customerUsages?.length || 0} müşteri bulundu
+              Toplam {analysisData?.customerUsages?.length || 0} müşteri bulundu
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Aktif: En az bir ödenmiş faturası olan müşteriler | Pasif: Henüz ödenmiş faturası olmayan müşteriler
             </p>
           </div>
           <div className="overflow-x-auto">
@@ -238,7 +254,7 @@ Müşteri Listesi
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {analysisData.customerUsages && analysisData.customerUsages.length > 0 ? (
+                {analysisData?.customerUsages && analysisData.customerUsages.length > 0 ? (
                   analysisData.customerUsages.map((customer) => (
                     <tr key={customer.customerId}>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -362,6 +378,12 @@ Müşteri Listesi
                       {customerUsageData.totalSpent > 0 ? 'Aktif' : 'Pasif'}
                     </span>
                   </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {customerUsageData.totalSpent > 0 
+                      ? 'Aktif: En az bir ödenmiş faturası var' 
+                      : 'Pasif: Henüz ödenmiş faturası yok'
+                    }
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Son Kullanım:</span>
                     <span className="text-gray-900">
@@ -415,7 +437,7 @@ Müşteri Listesi
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setCustomerUsageData(null)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                className="px-4 py-2 bg-gray-600 text-black rounded-md hover:bg-gray-700"
               >
                 Kapat
               </button>
@@ -445,7 +467,7 @@ Müşteri Listesi
             <div className="mt-4">
               <button
                 onClick={loadFilteredData}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-black rounded-md hover:bg-blue-700"
               >
                 Filtrele
               </button>

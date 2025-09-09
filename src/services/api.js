@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5258/api';
+const API_BASE_URL = 'https://crmsystem-project.onrender.com/api';
 
 // Axios instance oluşturma
 const api = axios.create({
@@ -54,7 +54,9 @@ export const customerService = {
   delete: (id) => api.delete(`/customers/${id}`),
   // Müşteri-Hizmet Analiz Endpoint'leri
   getServiceUsage: (id) => api.get(`/customers/${id}/service-usage`),
-  getServiceAnalysis: () => api.get('/customers/service-analysis'),
+  getServiceAnalysis: (includeInactiveCustomers = false) => api.get('/customers/service-analysis', { 
+    params: { includeInactiveCustomers } 
+  }),
   getServiceUsageByCustomer: (params = {}) => api.get('/customers/service-usage-by-customer', { params }),
 };
 

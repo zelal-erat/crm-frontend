@@ -22,7 +22,7 @@ const Users = () => {
   const loadUsers = async () => {
     try {
       // Backend'den personel listesi çek
-      const response = await fetch('http://localhost:5258/api/users/staff', {
+      const response = await fetch('https://crmsystem-project.onrender.com/api/users/staff', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -51,7 +51,7 @@ const Users = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5258/api/users/add-staff', {
+      const response = await fetch('https://crmsystem-project.onrender.com/api/users/add-staff', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -84,7 +84,7 @@ const Users = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Bu personeli silmek istediğinizden emin misiniz?')) {
       try {
-        const response = await fetch(`http://localhost:5258/api/users/${id}`, {
+        const response = await fetch(`https://crmsystem-project.onrender.com/api/users/${id}`, {
             method: 'DELETE',
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
